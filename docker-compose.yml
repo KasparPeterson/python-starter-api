@@ -1,0 +1,59 @@
+version: "3.9"
+services:
+  web:
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: docker/services/web/Dockerfile
+    volumes:
+      - ./logs:/home/appuser/logs
+      - ./prometheus:/home/appuser/prometheus
+      - ./data:/home/appuser/data
+      - ./.credentials:/home/appuser/.credentials
+    command: ./entrypoint.sh
+    expose:
+      - "3000"
+    restart: unless-stopped
+    networks:
+      - shared_network
+  nginx:
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: docker/services/nginx/Dockerfile
+    volumes:
+      - ./shared:/usr/share
+    ports:
+      - 80:80
+    restart: unless-stopped
+    depends_on:
+      - web
+    networks:
+      - shared_network
+
+  cron:
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: docker/services/web/Dockerfile
+    volumes:
+      - ./logs/logs_cron:/home/appuser/logs
+    command: python cron_runner.py
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.3.0
+    volumes:
+      - ./docker/services/promtail/config.yml:/etc/promtail/config.yml
+      - ./logs:/var/log
+    command: -config.file=/etc/promtail/config.yml -config.expand-env
+    restart: unless-stopped
+    environment:
+      - HOST_HOSTNAME=${HOSTNAME}
+
+networks:
+  shared_network:
+    external: true  # Ensure this network is externally defined

@@ -1,0 +1,20 @@
+*.pyc
+venv
+.venv
+
+.env
+*.log
+
+.idea
+.vscode
+
+prometheus
+
+# code coverage
+.coverage
+tests/reports/
+
+scripts/openapi.json
+
+.credentials
+solana.key
